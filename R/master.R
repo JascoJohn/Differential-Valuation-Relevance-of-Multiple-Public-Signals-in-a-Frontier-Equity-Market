@@ -5,6 +5,7 @@
 # =============================================================
 options(width = 200)
 library(digest)
+for (dd in c("data/derived", "output/tables", "logs")) dir.create(dd, recursive = TRUE, showWarnings = FALSE)
 sink("logs/master.log", split = TRUE)
 cat("Master run started:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
 cat(R.version.string, "\n")
