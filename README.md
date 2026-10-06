@@ -1,8 +1,10 @@
-# Replication package: Differential Valuation Relevance of Public Signals in DSE-Listed Commercial Banks
+# Replication package: Asset Quality and Bank Valuation in a Frontier Equity Market: Evidence from Tanzanian Listed Commercial Banks
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23196473.svg)](https://doi.org/10.5281/zenodo.23196473)
 
 **Authors:** Jasco Francis John (Ardhi University); Minja Ladislaus
 **Package version:** 1.0 (October 2026)
-**Manuscript:** *[title, journal and DOI to be added]*
+**Manuscript:** *Asset Quality and Bank Valuation in a Frontier Equity Market: Evidence from Tanzanian Listed Commercial Banks* (under review)
 **Dataset:** Tanzania_DSE_AnalyticalDataset_v1.3.1_LOCKED (included)
 
 This package reproduces every table, test, diagnostic and robustness check reported in the manuscript from the locked analytical dataset, using R. One script (`R/master.R`) rebuilds all results from scratch and verifies them against the reference outputs supplied in `reference/`.
@@ -173,4 +175,5 @@ Run time is about 10–15 minutes on a standard laptop, mostly the confidence-in
 - Code: MIT License
 - Data: Creative Commons Attribution 4.0 International (CC BY 4.0)
 
-Please cite the article *[reference]* and this package *[Zenodo DOI]*.
+Please cite the article (reference to be added on publication) and this package:
+John, J., & Ladislaus, M. (2026). *Replication package: Asset Quality and Bank Valuation in a Frontier Equity Market: Evidence from Tanzanian Listed Commercial Banks* [Software]. Zenodo. https://doi.org/10.5281/zenodo.23196473

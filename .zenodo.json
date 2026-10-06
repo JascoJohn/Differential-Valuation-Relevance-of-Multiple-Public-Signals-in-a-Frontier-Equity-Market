@@ -1,8 +1,8 @@
 {
-  "title": "Replication package: Differential Valuation Relevance of Public Signals in DSE-Listed Commercial Banks",
+  "title": "Replication package: Asset Quality and Bank Valuation in a Frontier Equity Market: Evidence from Tanzanian Listed Commercial Banks",
   "upload_type": "software",
   "creators": [
-    {"name": "John, Jasco Francis", "affiliation": "Ardhi University"},
+    {"name": "John, Jasco", "affiliation": "Ardhi University"},
     {"name": "Ladislaus, Minja"}
   ],
   "description": "R code, locked dataset (v1.3.1) and reference outputs reproducing all results of the study. Restore packages with renv::restore(), then run R/master.R.",
