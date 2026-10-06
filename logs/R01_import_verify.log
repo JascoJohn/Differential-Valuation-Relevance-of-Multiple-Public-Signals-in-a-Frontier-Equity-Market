@@ -1,0 +1,95 @@
+
+> cat("Run started:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
+Run started: 2026-10-05 22:03:06 
+
+> library(readxl); library(digest)
+
+> f <- "data/raw/Tanzania_DSE_AnalyticalDataset_v1.3.1_LOCKED.xlsx"
+
+> stopifnot(file.exists(f))
+
+> cat("File:", f, "\n")
+File: data/raw/Tanzania_DSE_AnalyticalDataset_v1.3.1_LOCKED.xlsx 
+
+> cat("Size (bytes):", file.info(f)$size, "\n")
+Size (bytes): 134968 
+
+> cat("File SHA-256:", digest(file = f, algo = "sha256"), "\n")
+File SHA-256: 1fffff6c33475ce40dc3a8528ef4846fe4e6ae53352666d93a3f5537ed9eb289 
+
+> cat("Panel-content checksum recorded in the workbook (VERSION_LOG, compute_panel_checksum.py):\n",
++     "  92fc00fdf74a8333a6e823429f44e57af2c6943eb726d543d590df6e50681043\n")
+Panel-content checksum recorded in the workbook (VERSION_LOG, compute_panel_checksum.py):
+   92fc00fdf74a8333a6e823429f44e57af2c6943eb726d543d590df6e50681043
+
+> cat("\nSheets:\n"); print(excel_sheets(f))
+
+Sheets:
+[1] "README"              "ANALYTICAL_PANEL"    "VARIABLE_DICTIONARY" "CODING_KEY"          "REPRODUCIBILITY"     "PROVENANCE"          "DECISION_LOG"        "VERSION_LOG"        
+
+> panel <- as.data.frame(read_excel(f, sheet = "ANALYTICAL_PANEL"))
+-/                                                                                                                                                                                                      /                                                                                                                                                                                                      -                                                                                                                                                                                                      
+> cat("\nDimensions:", dim(panel), "\n"); str(panel); print(summary(panel))
+
+Dimensions: 50 22 
+'data.frame':	50 obs. of  22 variables:
+ $ bank_id       : chr  "B01" "B01" "B01" "B01" ...
+ $ bank_name     : chr  "CRDB Bank" "CRDB Bank" "CRDB Bank" "CRDB Bank" ...
+ $ year          : num  2016 2017 2018 2019 2020 ...
+ $ mtb           : num  0.909 0.748 0.506 0.359 0.504 ...
+ $ market_cap    : num  6.53e+11 5.48e+11 3.92e+11 3.13e+11 5.09e+11 ...
+ $ book_equity   : num  7.18e+11 7.33e+11 7.74e+11 8.73e+11 1.01e+12 ...
+ $ car           : num  0.176 0.168 0.161 0.174 0.179 0.2 0.183 0.175 0.178 0.188 ...
+ $ car_basis     : chr  "Total" "Total" "Total" "Total" ...
+ $ npl           : num  0.139 0.126 0.085 0.055 0.044 0.033 0.028 0.028 0.03 0.029 ...
+ $ ldr           : num  0.827 0.722 0.711 0.688 0.755 ...
+ $ ldr_label_used: chr  "Loan-to-Deposit Ratio" "Loan-to-Deposit Ratio" "Loan-to-Deposit Ratio" "Loan-to-Deposit Ratio" ...
+ $ roa           : num  0.01368 0.00614 0.01063 0.01821 0.02173 ...
+ $ roe           : num  0.1032 0.0494 0.0829 0.1376 0.1634 ...
+ $ eps           : num  28 13.9 24.6 46 63.2 ...
+ $ net_profit    : num  7.41e+10 3.62e+10 6.41e+10 1.20e+11 1.65e+11 ...
+ $ total_assets  : num  5.42e+12 5.90e+12 6.04e+12 6.60e+12 7.60e+12 ...
+ $ ln_ta         : num  29.3 29.4 29.4 29.5 29.7 ...
+ $ fdi           : num  1 1 1 1 1 1 1 1 1 1 ...
+ $ rdi           : num  1 1 1 1 1 1 1 1 1 1 ...
+ $ otdi          : num  1 1 1 1 1 1 1 1 1 1 ...
+ $ ipdi          : num  1 1 1 1 1 1 1 1 1 1 ...
+ $ full_report   : num  1 1 1 1 1 1 1 1 1 1 ...
+      bank_id       bank_name       year           mtb           market_cap         book_equity             car             car_basis       npl               ldr           ldr_label_used
+ Length   :50   Length   :50   Min.   :2016   Min.   :0.3173   Min.   :1.269e+10   Min.   :1.563e+10   Min.   :0.0576   Length   :50   Min.   :0.00000   Min.   :0.4223   Length   :50    
+ N.unique : 5   N.unique : 5   1st Qu.:2018   1st Qu.:0.7023   1st Qu.:1.951e+10   1st Qu.:2.343e+10   1st Qu.:0.1643   N.unique : 1   1st Qu.:0.02800   1st Qu.:0.7290   N.unique : 2    
+ N.blank  : 0   N.blank  : 0   Median :2020   Median :0.9861   Median :3.091e+10   Median :3.107e+10   Median :0.1850   N.blank  : 0   Median :0.04960   Median :0.8101   N.blank  : 0    
+ Min.nchar: 3   Min.nchar: 8   Mean   :2020   Mean   :1.0133   Mean   :6.312e+11   Mean   :5.905e+11   Mean   :0.3100   Min.nchar: 5   Mean   :0.06167   Mean   :0.8658   Min.nchar:21    
+ Max.nchar: 3   Max.nchar:24   3rd Qu.:2023   3rd Qu.:1.3056   3rd Qu.:1.100e+12   3rd Qu.:9.424e+11   3rd Qu.:0.2325   Max.nchar: 5   3rd Qu.:0.08500   3rd Qu.:0.9500   Max.nchar:23    
+                               Max.   :2025   Max.   :1.8771   Max.   :4.210e+12   Max.   :3.107e+12   Max.   :3.2100   NAs      : 4   Max.   :0.20000   Max.   :2.2500   NAs      : 1    
+                                              NAs    :3        NAs    :3                               NAs    :4                       NAs    :1         NAs    :1                        
+      roa                 roe                eps             net_profit          total_assets           ln_ta            fdi         rdi          otdi         ipdi     full_report    
+ Min.   :-0.179294   Min.   :-0.39364   Min.   :-319.000   Min.   :-6.583e+09   Min.   :2.985e+10   Min.   :24.12   Min.   :1   Min.   :1    Min.   :1    Min.   :1    Min.   :0.0000  
+ 1st Qu.:-0.001791   1st Qu.:-0.01400   1st Qu.:  -2.438   1st Qu.:-2.457e+08   1st Qu.:1.443e+11   1st Qu.:25.69   1st Qu.:1   1st Qu.:1    1st Qu.:1    1st Qu.:1    1st Qu.:1.0000  
+ Median : 0.010101   Median : 0.06564   Median :  42.500   Median : 2.944e+09   Median :2.434e+11   Median :26.22   Median :1   Median :1    Median :1    Median :1    Median :1.0000  
+ Mean   : 0.001140   Mean   : 0.06715   Mean   : 179.474   Mean   : 1.234e+11   Mean   :4.021e+12   Mean   :27.27   Mean   :1   Mean   :1    Mean   :1    Mean   :1    Mean   :0.7755  
+ 3rd Qu.: 0.030106   3rd Qu.: 0.21872   3rd Qu.: 232.000   3rd Qu.: 1.533e+11   3rd Qu.:6.552e+12   3rd Qu.:29.51   3rd Qu.:1   3rd Qu.:1    3rd Qu.:1    3rd Qu.:1    3rd Qu.:1.0000  
+ Max.   : 0.047096   Max.   : 0.26521   Max.   :1512.770   Max.   : 7.601e+11   Max.   :2.231e+13   Max.   :30.74   Max.   :1   Max.   :1    Max.   :1    Max.   :1    Max.   :1.0000  
+                                                                                                                    NAs    :1   NAs    :12   NAs    :12   NAs    :12   NAs    :1       
+
+> # Structural checks against the dataset's documented design (5 banks x 2016-2025)
+> stopifnot(nrow(panel) == 50, ncol(panel) == 22,
++           all(table(panel$bank_id) == 10), all(sort(unique(panel$year)) == 2016:2025))
+
+> cat("\nStructure verified: 5 banks x 10 years, 22 variables.\n")
+
+Structure verified: 5 banks x 10 years, 22 variables.
+
+> panel <- panel[order(panel$bank_id, panel$year), ]
+
+> write.csv(panel, "data/derived/panel_imported.csv", row.names = FALSE, na = "")
+
+> saveRDS(panel, "data/derived/panel_imported.rds")
+
+> cat("Imported panel CSV SHA-256:", digest(file = "data/derived/panel_imported.csv", algo = "sha256"), "\n")
+Imported panel CSV SHA-256: 0e7db0e18ce5c906f7af7eef5e71bccc3b310bae5fc3382170df961bbf35775a 
+
+> cat("Run finished:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
+Run finished: 2026-10-05 22:03:06 
+
+> sink()

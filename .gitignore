@@ -1,0 +1,9 @@
+renv/library/
+renv/staging/
+.Rproj.user/
+.Rhistory
+.RData
+data/derived/
+output/tables/
+_dev_archive/
+archive/

@@ -1,0 +1,5 @@
+"Test","Statistic","p"
+"Modified Wald (groupwise heteroskedasticity)","chi2(5) = 359.53",1.55137490512356e-75
+"Pesaran CD (cross-sectional dependence)","CD = -1.611; mean |rho| = 0.448",0.107227076202485
+"Wooldridge (first-order serial correlation)","F(1,4) = 0.648",0.4660289658887
+"Hausman (FE vs RE, Amemiya)","chi2(14) = 3.31",0.998373337533119

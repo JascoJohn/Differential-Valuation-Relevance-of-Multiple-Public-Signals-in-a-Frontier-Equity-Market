@@ -1,0 +1,202 @@
+
+> cat("Run started:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
+Run started: 2026-10-05 22:06:37 
+
+> library(digest); library(fixest)
+
+> source("R/wcb_functions.R")
+
+> stopifnot(digest(file = "data/derived/panel_analysis.csv", algo = "sha256") ==
++             "de5b2268e868832710b01c711ae081dc3248d933feab3fef31f9c224f40ec1f6")
+
+> p <- readRDS("data/derived/panel_analysis.rds")
+
+> d <- p[p$core, ]; d <- d[order(d$bank_id, d$year), ]
+
+> d$bank_id <- factor(d$bank_id); d$year_f <- factor(d$year)
+
+> B <- 9999; SEED <- 20261004; G <- nlevels(d$bank_id)
+
+> clw <- function(m, rows) {                         # clustered Wald F(q, G-1), secondary
++   R <- Rm(names(coef(m)), rows); b <- coef(m); V <- vcov(m); q <- nrow(R); Rb <- R %*% b
++   Fs <- as.numeric(t(Rb) %*% solve(R %*% V %*% t(R)) %*% Rb) / q
++   c(F = Fs, p = pf(Fs, q, G - 1, lower.tail = FALSE), Rb = if (q == 1) drop(Rb) else NA)
++ }
+
+> models <- list(
++   Eq4 = c("cw_car", "cw_negnpl", "Lfull"),
++   Eq5 = c("cw_roa", "cw_roe", "cw_eps", "Lfull"),
++   Eq6 = c("cwbsi", "cwfpi", "cwfull"))
+
+> fits <- list(); coefrows <- list()
+
+> for (s in names(models)) {
++   f <- as.formula(paste("ln_mtb ~", paste(models[[s]], collapse = " + "), "+ year_f | bank_id"))
++   m <- feols(f, data = d, cluster = ~bank_id); fits[[s]] <- m
++   cat("\n================ ", s, " ================\n"); print(summary(m))
++   ct <- coeftable(m)
++   for (v in models[[s]]) {
++     w <- wcb_test(m, d, list(setNames(1, v)), B = B, seed = SEED, ci = TRUE)
++     coefrows[[length(coefrows) + 1]] <- data.frame(Model = s, Variable = v, Coef = ct[v, 1],
++                                                    SE_cluster = ct[v, 2], t_cluster = ct[v, 3], p_cluster = ct[v, 4], p_wcb = w["p"],
++                                                    CI_lo = w["ci_lo"], CI_hi = w["ci_hi"], N = nobs(m), Within_R2 = unname(r2(m, "wr2")), row.names = NULL)
++   }
++ }
+
+================  Eq4  ================
+OLS estimation, Dep. Var.: ln_mtb
+Observations: 40
+Fixed-effects: bank_id: 5
+Standard-errors: Clustered (bank_id) 
+            Estimate Std. Error   t value Pr(>|t|)    
+cw_car     -0.089978   0.023802 -3.780297 0.019431 *  
+cw_negnpl   0.061649   0.067508  0.913212 0.412795    
+Lfull       0.015735   0.119280  0.131915 0.901421    
+year_f2018 -0.098009   0.136463 -0.718210 0.512342    
+year_f2019 -0.224855   0.314793 -0.714295 0.514514    
+year_f2020 -0.187980   0.242319 -0.775752 0.481207    
+year_f2021 -0.386154   0.237319 -1.627155 0.179033    
+year_f2022 -0.360184   0.215001 -1.675268 0.169192    
+year_f2023 -0.500219   0.118477 -4.222067 0.013455 *  
+year_f2024 -0.515379   0.113102 -4.556779 0.010364 *  
+year_f2025  0.123942   0.274605  0.451346 0.675128    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.233808     Adj. R2: 0.550045
+                 Within R2: 0.455058
+
+================  Eq5  ================
+OLS estimation, Dep. Var.: ln_mtb
+Observations: 40
+Fixed-effects: bank_id: 5
+Standard-errors: Clustered (bank_id) 
+            Estimate Std. Error   t value Pr(>|t|)    
+cw_roa     -0.153150   0.121992 -1.255411 0.277665    
+cw_roe     -0.051242   0.070608 -0.725718 0.508197    
+cw_eps     -0.094588   0.084525 -1.119056 0.325776    
+Lfull      -0.200058   0.187465 -1.067177 0.346020    
+year_f2018 -0.265500   0.178104 -1.490704 0.210297    
+year_f2019 -0.393113   0.353462 -1.112177 0.328397    
+year_f2020 -0.410016   0.100358 -4.085522 0.015030 *  
+year_f2021 -0.272171   0.224783 -1.210813 0.292614    
+year_f2022 -0.085790   0.190059 -0.451384 0.675104    
+year_f2023 -0.099933   0.195611 -0.510876 0.636342    
+year_f2024 -0.165658   0.263963 -0.627581 0.564324    
+year_f2025  0.625405   0.248594  2.515767 0.065652 .  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.212222     Adj. R2: 0.613176
+                 Within R2: 0.551037
+
+================  Eq6  ================
+OLS estimation, Dep. Var.: ln_mtb
+Observations: 40
+Fixed-effects: bank_id: 5
+Standard-errors: Clustered (bank_id) 
+            Estimate Std. Error   t value Pr(>|t|)    
+cwbsi       0.032791   0.062572  0.524046 0.627942    
+cwfpi      -0.260447   0.148358 -1.755531 0.154018    
+cwfull     -0.070508   0.075247 -0.937019 0.401798    
+year_f2018 -0.218541   0.167866 -1.301878 0.262869    
+year_f2019 -0.343959   0.325771 -1.055829 0.350596    
+year_f2020 -0.388349   0.116975 -3.319939 0.029380 *  
+year_f2021 -0.219560   0.231604 -0.947996 0.396812    
+year_f2022 -0.053714   0.218278 -0.246082 0.817730    
+year_f2023 -0.042378   0.271089 -0.156324 0.883350    
+year_f2024 -0.127467   0.275562 -0.462571 0.667716    
+year_f2025  0.668711   0.275650  2.425947 0.072297 .  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.214004     Adj. R2: 0.623042
+                 Within R2: 0.543465
+
+> coefs <- do.call(rbind, coefrows)
+
+> cat("\n================ H2 model coefficients (per common within-bank SD) ================\n")
+
+================ H2 model coefficients (per common within-bank SD) ================
+
+> print(format(coefs, digits = 4), row.names = FALSE)
+ Model  Variable     Coef SE_cluster t_cluster p_cluster  p_wcb    CI_lo  CI_hi  N Within_R2
+   Eq4    cw_car -0.08998    0.02380   -3.7803   0.01943 0.2350     -Inf    Inf 40    0.4551
+   Eq4 cw_negnpl  0.06165    0.06751    0.9132   0.41279 0.3898 -0.04636 0.2540 40    0.4551
+   Eq4     Lfull  0.01573    0.11928    0.1319   0.90142 0.9150 -0.53892 0.5286 40    0.4551
+   Eq5    cw_roa -0.15315    0.12199   -1.2554   0.27767 0.4046     -Inf 0.8228 40    0.5510
+   Eq5    cw_roe -0.05124    0.07061   -0.7257   0.50820 0.5593 -0.30543 0.3512 40    0.5510
+   Eq5    cw_eps -0.09459    0.08452   -1.1191   0.32578 0.4626     -Inf    Inf 40    0.5510
+   Eq5     Lfull -0.20006    0.18746   -1.0672   0.34602 0.4289 -0.89368 0.3155 40    0.5510
+   Eq6     cwbsi  0.03279    0.06257    0.5240   0.62794 0.8659 -0.32700 0.4020 40    0.5435
+   Eq6     cwfpi -0.26045    0.14836   -1.7555   0.15402 0.1950 -0.54233 0.1030 40    0.5435
+   Eq6    cwfull -0.07051    0.07525   -0.9370   0.40180 0.4863 -0.29249 0.1327 40    0.5435
+
+> write.csv(coefs, "output/tables/T4a_H2_coefficients.csv", row.names = FALSE)
+
+> tests <- list(
++   list("Eq4", "H2a", "CAR = -NPL",          list(c(cw_car = 1, cw_negnpl = -1)), "principal"),
++   list("Eq5", "H2b", "ROA = ROE = EPS",     list(c(cw_roa = 1, cw_roe = -1), c(cw_roa = 1, cw_eps = -1)), "principal (joint)"),
++   list("Eq5", "H2b", "ROA = ROE",           list(c(cw_roa = 1, cw_roe = -1)), "pairwise"),
++   list("Eq5", "H2b", "ROA = EPS",           list(c(cw_roa = 1, cw_eps = -1)), "pairwise"),
++   list("Eq5", "H2b", "ROE = EPS",           list(c(cw_roe = 1, cw_eps = -1)), "pairwise"),
++   list("Eq6", "H2c", "BSI = FPI = FULLREP", list(c(cwbsi = 1, cwfpi = -1), c(cwbsi = 1, cwfull = -1)), "principal (joint)"),
++   list("Eq6", "H2c", "BSI = FPI",           list(c(cwbsi = 1, cwfpi = -1)), "pairwise"),
++   list("Eq6", "H2c", "BSI = FULLREP",       list(c(cwbsi = 1, cwfull = -1)), "pairwise"),
++   list("Eq6", "H2c", "FPI = FULLREP",       list(c(cwfpi = 1, cwfull = -1)), "pairwise"))
+
+> trows <- list()
+
+> for (tst in tests) {
++   m <- fits[[tst[[1]]]]; rr <- tst[[4]]; q <- length(rr)
++   w  <- wcb_test(m, d, rr, B = B, seed = SEED, ci = (q == 1))
++   cl <- clw(m, rr)
++   trows[[length(trows) + 1]] <- data.frame(Model = tst[[1]], Hypothesis = tst[[2]], Restriction = tst[[3]],
++                                            Role = tst[[5]], q = q, Estimate = cl["Rb"],
++                                            Statistic = if (q == 1) sign(cl["Rb"]) * sqrt(cl["F"]) else cl["F"],
++                                            Stat_type = if (q == 1) "t (clustered)" else "F (clustered)",
++                                            p_wcb = w["p"], CI_lo = w["ci_lo"], CI_hi = w["ci_hi"], p_cluster = cl["p"], row.names = NULL)
++ }
+
+> tt <- do.call(rbind, trows)
+
+> for (h in c("H2b", "H2c")) {
++   jp <- tt$p_wcb[tt$Hypothesis == h & tt$Role == "principal (joint)"]
++   tt$Role[tt$Hypothesis == h & tt$Role == "pairwise"] <-
++     if (jp < 0.05) "pairwise (joint rejected)" else "pairwise (exploratory: joint not rejected)"
++ }
+
+> # Determinism check: repeated tests give identical p-values
+> a1 <- wcb_test(fits$Eq4, d, list(c(cw_car = 1, cw_negnpl = -1)), B = B, seed = SEED)["p"]
+
+> a2 <- wcb_test(fits$Eq4, d, list(c(cw_car = 1, cw_negnpl = -1)), B = B, seed = SEED)["p"]
+
+> j1 <- wcb_test(fits$Eq6, d, list(c(cwbsi = 1, cwfpi = -1), c(cwbsi = 1, cwfull = -1)), B = B, seed = SEED)["p"]
+
+> j2 <- wcb_test(fits$Eq6, d, list(c(cwbsi = 1, cwfpi = -1), c(cwbsi = 1, cwfull = -1)), B = B, seed = SEED)["p"]
+
+> cat(sprintf("\nDeterminism check: H2a %.6f vs %.6f; H2c joint %.6f vs %.6f\n", a1, a2, j1, j2))
+
+Determinism check: H2a 0.189119 vs 0.189119; H2c joint 0.168717 vs 0.168717
+
+> stopifnot(identical(a1, a2), identical(j1, j2))
+
+> cat("\n================ H2 equality tests (bootstrap p = principal inference) ================\n")
+
+================ H2 equality tests (bootstrap p = principal inference) ================
+
+> print(format(tt, digits = 4), row.names = FALSE)
+ Model Hypothesis         Restriction                                       Role q Estimate Statistic     Stat_type  p_wcb   CI_lo    CI_hi p_cluster
+   Eq4        H2a          CAR = -NPL                                  principal 1 -0.15163   -1.8541 t (clustered) 0.1891 -0.5810  0.28590   0.13734
+   Eq5        H2b     ROA = ROE = EPS                          principal (joint) 2       NA    1.2109 F (clustered) 0.6946      NA       NA   0.38798
+   Eq5        H2b           ROA = ROE pairwise (exploratory: joint not rejected) 1 -0.10191   -0.5396 t (clustered) 0.6292 -1.1312  1.28625   0.61812
+   Eq5        H2b           ROA = EPS pairwise (exploratory: joint not rejected) 1 -0.05856   -1.2637 t (clustered) 0.4862    -Inf      Inf   0.27496
+   Eq5        H2b           ROE = EPS pairwise (exploratory: joint not rejected) 1  0.04335    0.2839 t (clustered) 0.8057 -0.7734  0.83721   0.79056
+   Eq6        H2c BSI = FPI = FULLREP                          principal (joint) 2       NA    6.3514 F (clustered) 0.1687      NA       NA   0.05735
+   Eq6        H2c           BSI = FPI pairwise (exploratory: joint not rejected) 1  0.29324    1.4318 t (clustered) 0.4200 -0.4133  0.68236   0.22546
+   Eq6        H2c       BSI = FULLREP pairwise (exploratory: joint not rejected) 1  0.10330    0.7923 t (clustered) 0.6984 -0.3530  0.44226   0.47250
+   Eq6        H2c       FPI = FULLREP pairwise (exploratory: joint not rejected) 1 -0.18994   -2.3572 t (clustered) 0.0372 -0.4518 -0.01267   0.07790
+
+> write.csv(tt, "output/tables/T4b_H2_tests.csv", row.names = FALSE)
+
+> cat("Run finished:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
+Run finished: 2026-10-05 22:09:37 
+
+> sink()

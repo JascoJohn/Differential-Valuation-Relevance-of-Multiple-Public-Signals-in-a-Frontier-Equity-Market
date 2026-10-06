@@ -1,0 +1,105 @@
+
+> cat("Run started:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
+Run started: 2026-10-05 22:09:45 
+
+> library(digest); library(fixest)
+
+> source("R/wcb_functions.R")
+
+> stopifnot(digest(file = "data/derived/panel_analysis.csv", algo = "sha256") ==
++             "de5b2268e868832710b01c711ae081dc3248d933feab3fef31f9c224f40ec1f6")
+
+> p <- readRDS("data/derived/panel_analysis.rds")
+
+> d <- p[p$core, ]; d <- d[order(d$bank_id, d$year), ]
+
+> d$bank_id <- factor(d$bank_id); d$year_f <- factor(d$year); G <- nlevels(d$bank_id)
+
+> NSIM <- 500; BSIM <- 399
+
+> fml <- function(y, x) as.formula(paste(y, "~", paste(x, collapse = " + "), "+ year_f | bank_id"))
+
+> clw <- function(m, rows) {
++   R <- Rm(names(coef(m)), rows); b <- coef(m); V <- vcov(m); q <- nrow(R); Rb <- R %*% b
++   Fs <- as.numeric(t(Rb) %*% solve(R %*% V %*% t(R)) %*% Rb) / q
++   pf(Fs, q, G - 1, lower.tail = FALSE)
++ }
+
+> # Data-generating process: estimated model with the tested coefficients set to the null
+> # (zero for NPL; their common mean for equality tests) plus lambda x the estimated departure.
+> # Errors: normal with bank-specific SD of the estimated residuals.
+> cells <- list(
++   list(test = "NPL (Eq. 3)", x = c("Lcar", "Lnpl", "Lroa", "Lroe", "Leps", "Lfull"), cmp = "Lnpl",
++        rows = list(c(Lnpl = 1)), lams = c(0, 1), null = "zero"),
++   list(test = "H2a", x = c("cw_car", "cw_negnpl", "Lfull"), cmp = c("cw_car", "cw_negnpl"),
++        rows = list(c(cw_car = 1, cw_negnpl = -1)), lams = c(0, 1, 2), null = "equal"),
++   list(test = "H2b", x = c("cw_roa", "cw_roe", "cw_eps", "Lfull"), cmp = c("cw_roa", "cw_roe", "cw_eps"),
++        rows = list(c(cw_roa = 1, cw_roe = -1), c(cw_roa = 1, cw_eps = -1)), lams = c(0, 1, 2), null = "equal"),
++   list(test = "H2c", x = c("cwbsi", "cwfpi", "cwfull"), cmp = c("cwbsi", "cwfpi", "cwfull"),
++        rows = list(c(cwbsi = 1, cwfpi = -1), c(cwbsi = 1, cwfull = -1)), lams = c(0, 1, 2), null = "equal"))
+
+> set.seed(20261004)
+
+> out <- list()
+
+> for (cc in cells) {
++   m0 <- feols(fml("ln_mtb", cc$x), data = d, cluster = ~bank_id)
++   b  <- coef(m0)[cc$cmp]; Xc <- as.matrix(d[, cc$cmp])
++   bbar <- if (cc$null == "zero") 0 else mean(b)
++   base <- fitted(m0) - drop(Xc %*% b) + bbar * rowSums(Xc)
++   dev  <- drop(Xc %*% (b - bbar))
++   sdb  <- ave(resid(m0), d$bank_id, FUN = sd)
++   for (lam in cc$lams) {
++     pw <- pc <- numeric(NSIM)
++     for (r in seq_len(NSIM)) {
++       dd <- d; dd$ystar <- base + lam * dev + sdb * rnorm(nrow(d))
++       m <- feols(fml("ystar", cc$x), data = dd, cluster = ~bank_id)
++       pw[r] <- wcb_test(m, dd, cc$rows, B = BSIM, seed = NULL, depvar = "ystar")["p"]
++       pc[r] <- clw(m, cc$rows)
++     }
++     out[[length(out) + 1]] <- data.frame(Test = cc$test, Lambda = lam,
++                                          Reject_WCB_05 = mean(pw < .05), Reject_cluster_05 = mean(pc < .05),
++                                          Reject_WCB_10 = mean(pw < .10), Reject_cluster_10 = mean(pc < .10),
++                                          MC_SE_05 = sqrt(mean(pw < .05) * (1 - mean(pw < .05)) / NSIM), Sims = NSIM)
++     cat(sprintf("%-12s lambda = %d: WCB rejects %.3f, clustered rejects %.3f (5%% level)\n",
++                 cc$test, lam, mean(pw < .05), mean(pc < .05)))
++   }
++ }
+NPL (Eq. 3)  lambda = 0: WCB rejects 0.072, clustered rejects 0.052 (5% level)
+NPL (Eq. 3)  lambda = 1: WCB rejects 0.312, clustered rejects 0.348 (5% level)
+H2a          lambda = 0: WCB rejects 0.048, clustered rejects 0.090 (5% level)
+H2a          lambda = 1: WCB rejects 0.242, clustered rejects 0.456 (5% level)
+H2a          lambda = 2: WCB rejects 0.602, clustered rejects 0.884 (5% level)
+H2b          lambda = 0: WCB rejects 0.026, clustered rejects 0.366 (5% level)
+H2b          lambda = 1: WCB rejects 0.034, clustered rejects 0.494 (5% level)
+H2b          lambda = 2: WCB rejects 0.078, clustered rejects 0.810 (5% level)
+H2c          lambda = 0: WCB rejects 0.074, clustered rejects 0.106 (5% level)
+H2c          lambda = 1: WCB rejects 0.422, clustered rejects 0.666 (5% level)
+H2c          lambda = 2: WCB rejects 0.752, clustered rejects 0.970 (5% level)
+
+> pw_tab <- do.call(rbind, out)
+
+> cat("\nLambda 0 = size (null true); 1 = effect as estimated; 2 = twice the estimate\n")
+
+Lambda 0 = size (null true); 1 = effect as estimated; 2 = twice the estimate
+
+> print(format(pw_tab, digits = 3), row.names = FALSE)
+        Test Lambda Reject_WCB_05 Reject_cluster_05 Reject_WCB_10 Reject_cluster_10 MC_SE_05 Sims
+ NPL (Eq. 3)      0         0.072             0.052         0.122             0.116  0.01156  500
+ NPL (Eq. 3)      1         0.312             0.348         0.450             0.492  0.02072  500
+         H2a      0         0.048             0.090         0.110             0.146  0.00956  500
+         H2a      1         0.242             0.456         0.416             0.620  0.01915  500
+         H2a      2         0.602             0.884         0.798             0.938  0.02189  500
+         H2b      0         0.026             0.366         0.066             0.490  0.00712  500
+         H2b      1         0.034             0.494         0.098             0.640  0.00810  500
+         H2b      2         0.078             0.810         0.164             0.892  0.01199  500
+         H2c      0         0.074             0.106         0.128             0.170  0.01171  500
+         H2c      1         0.422             0.666         0.614             0.796  0.02209  500
+         H2c      2         0.752             0.970         0.910             0.996  0.01931  500
+
+> write.csv(pw_tab, "output/tables/T9_power.csv", row.names = FALSE)
+
+> cat("Run finished:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
+Run finished: 2026-10-05 22:12:22 
+
+> sink()

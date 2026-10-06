@@ -1,0 +1,11 @@
+{
+  "title": "Replication package: Differential Valuation Relevance of Public Signals in DSE-Listed Commercial Banks",
+  "upload_type": "software",
+  "creators": [
+    {"name": "John, Jasco Francis", "affiliation": "Ardhi University"},
+    {"name": "Ladislaus, Minja"}
+  ],
+  "description": "R code, locked dataset (v1.3.1) and reference outputs reproducing all results of the study. Restore packages with renv::restore(), then run R/master.R.",
+  "license": "MIT",
+  "keywords": ["value relevance", "banks", "frontier markets", "Dar es Salaam Stock Exchange", "wild cluster bootstrap"]
+}

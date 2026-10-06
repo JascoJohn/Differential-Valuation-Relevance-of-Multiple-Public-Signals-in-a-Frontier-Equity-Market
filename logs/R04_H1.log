@@ -1,0 +1,198 @@
+
+> cat("Run started:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
+Run started: 2026-10-05 22:03:07 
+
+> library(digest); library(fixest)
+
+> source("R/wcb_functions.R")
+
+> stopifnot(digest(file = "data/derived/panel_analysis.csv", algo = "sha256") ==
++             "de5b2268e868832710b01c711ae081dc3248d933feab3fef31f9c224f40ec1f6")
+
+> p <- readRDS("data/derived/panel_analysis.rds")
+
+> d <- p[p$core, ]; d <- d[order(d$bank_id, d$year), ]
+
+> d$bank_id <- factor(d$bank_id); d$year_f <- factor(d$year)
+
+> B <- 9999; SEED <- 20261004
+
+> specs <- list(
++   Eq2a = c("Lcar", "Lnpl", "Lroa", "Lfull"),
++   Eq2b = c("Lcar", "Lnpl", "Lroe", "Lfull"),
++   Eq2c = c("Lcar", "Lnpl", "Leps", "Lfull"),
++   Eq3  = c("Lcar", "Lnpl", "Lroa", "Lroe", "Leps", "Lfull"))
+
+> rows <- list(); fits <- list()
+
+> for (s in names(specs)) {
++   f <- as.formula(paste("ln_mtb ~", paste(specs[[s]], collapse = " + "), "+ year_f | bank_id"))
++   m <- feols(f, data = d, cluster = ~bank_id); fits[[s]] <- m
++   cat("\n================ ", s, " ================\n"); print(summary(m))
++   ct <- coeftable(m)
++   for (v in specs[[s]]) {
++     w <- wcb_test(m, d, list(setNames(1, v)), B = B, seed = SEED, ci = TRUE)
++     rows[[length(rows) + 1]] <- data.frame(
++       Model = s, Variable = v, Coef = ct[v, 1], SE_cluster = ct[v, 2], t_cluster = ct[v, 3],
++       p_cluster = ct[v, 4], p_wcb = w["p"], CI_lo = w["ci_lo"], CI_hi = w["ci_hi"],
++       N = nobs(m), Within_R2 = unname(r2(m, "wr2")), row.names = NULL)
++   }
++ }
+
+================  Eq2a  ================
+OLS estimation, Dep. Var.: ln_mtb
+Observations: 40
+Fixed-effects: bank_id: 5
+Standard-errors: Clustered (bank_id) 
+            Estimate Std. Error   t value Pr(>|t|)    
+Lcar       -0.001713   0.000752 -2.278607 0.084917 .  
+Lnpl       -0.014287   0.017430 -0.819647 0.458446    
+Lroa       -0.037251   0.027045 -1.377362 0.240450    
+Lfull      -0.120375   0.212330 -0.566924 0.601066    
+year_f2018 -0.235074   0.175797 -1.337191 0.252137    
+year_f2019 -0.399494   0.384145 -1.039957 0.357087    
+year_f2020 -0.341182   0.253389 -1.346474 0.249387    
+year_f2021 -0.422161   0.254180 -1.660876 0.172075    
+year_f2022 -0.317966   0.228237 -1.393143 0.236006    
+year_f2023 -0.404682   0.159656 -2.534719 0.064341 .  
+year_f2024 -0.474062   0.152956 -3.099342 0.036244 *  
+year_f2025  0.235671   0.288848  0.815898 0.460356    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.218266     Adj. R2: 0.59083
+                 Within R2: 0.5251 
+
+================  Eq2b  ================
+OLS estimation, Dep. Var.: ln_mtb
+Observations: 40
+Fixed-effects: bank_id: 5
+Standard-errors: Clustered (bank_id) 
+            Estimate Std. Error   t value Pr(>|t|)    
+Lcar       -0.001570   0.000707 -2.219128 0.090700 .  
+Lnpl       -0.042226   0.019545 -2.160499 0.096835 .  
+Lroe       -0.017047   0.006233 -2.734887 0.052179 .  
+Lfull      -0.180059   0.160824 -1.119599 0.325570    
+year_f2018 -0.195223   0.210368 -0.928007 0.405932    
+year_f2019 -0.398084   0.367082 -1.084456 0.339154    
+year_f2020 -0.425419   0.227340 -1.871289 0.134630    
+year_f2021 -0.379627   0.319791 -1.187110 0.300865    
+year_f2022 -0.348226   0.238623 -1.459313 0.218247    
+year_f2023 -0.340380   0.161972 -2.101474 0.103481    
+year_f2024 -0.507723   0.121557 -4.176838 0.013954 *  
+year_f2025  0.225302   0.293008  0.768926 0.484823    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.210094     Adj. R2: 0.620892
+                 Within R2: 0.559992
+
+================  Eq2c  ================
+OLS estimation, Dep. Var.: ln_mtb
+Observations: 40
+Fixed-effects: bank_id: 5
+Standard-errors: Clustered (bank_id) 
+            Estimate Std. Error   t value Pr(>|t|) 
+Lcar       -0.001810   0.000885 -2.043815  0.11046 
+Lnpl       -0.018085   0.017866 -1.012279  0.36866 
+Leps       -0.000223   0.000476 -0.468930  0.66354 
+Lfull      -0.003274   0.136144 -0.024049  0.98197 
+year_f2018 -0.092412   0.143799 -0.642650  0.55544 
+year_f2019 -0.222389   0.313008 -0.710491  0.51663 
+year_f2020 -0.193618   0.234277 -0.826451  0.45499 
+year_f2021 -0.352485   0.253924 -1.388155  0.23740 
+year_f2022 -0.316999   0.235359 -1.346871  0.24927 
+year_f2023 -0.432583   0.216676 -1.996454  0.11659 
+year_f2024 -0.441966   0.241410 -1.830773  0.14110 
+year_f2025  0.218768   0.403757  0.541830  0.61671 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.231714     Adj. R2: 0.538856
+                 Within R2: 0.464777
+
+================  Eq3  ================
+OLS estimation, Dep. Var.: ln_mtb
+Observations: 40
+Fixed-effects: bank_id: 5
+Standard-errors: Clustered (bank_id) 
+            Estimate Std. Error   t value Pr(>|t|)    
+Lcar       -0.001083   0.001005 -1.077722 0.341815    
+Lnpl       -0.030868   0.007495 -4.118486 0.014630 *  
+Lroa       -0.029147   0.039405 -0.739671 0.500559    
+Lroe       -0.010897   0.005099 -2.137191 0.099401 .  
+Leps       -0.000303   0.000488 -0.620274 0.568668    
+Lfull      -0.241732   0.228668 -1.057127 0.350070    
+year_f2018 -0.259802   0.238166 -1.090844 0.336647    
+year_f2019 -0.468891   0.404409 -1.159447 0.310770    
+year_f2020 -0.467291   0.202165 -2.311433 0.081903 .  
+year_f2021 -0.364448   0.290507 -1.254527 0.277955    
+year_f2022 -0.260882   0.224988 -1.159537 0.310738    
+year_f2023 -0.231471   0.214940 -1.076913 0.342136    
+year_f2024 -0.378497   0.284179 -1.331896 0.253718    
+year_f2025  0.404887   0.359004  1.127804 0.322471    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.20277     Adj. R2: 0.613232
+                Within R2: 0.590136
+
+> # Determinism check: repeating a bootstrap test must give an identical p-value
+> p1 <- wcb_test(fits$Eq3, d, list(c(Lnpl = 1)), B = B, seed = SEED)["p"]
+
+> p2 <- wcb_test(fits$Eq3, d, list(c(Lnpl = 1)), B = B, seed = SEED)["p"]
+
+> cat(sprintf("\nDeterminism check (Eq3, NPL): %.6f vs %.6f\n", p1, p2)); stopifnot(identical(p1, p2))
+
+Determinism check (Eq3, NPL): 0.019002 vs 0.019002
+
+> res <- do.call(rbind, rows)
+
+> cat("\n================ H1 results (bootstrap p = principal inference) ================\n")
+
+================ H1 results (bootstrap p = principal inference) ================
+
+> print(format(res, digits = 4), row.names = FALSE)
+ Model Variable       Coef SE_cluster t_cluster p_cluster   p_wcb     CI_lo      CI_hi  N Within_R2
+  Eq2a     Lcar -0.0017135  0.0007520  -2.27861   0.08492 0.25013      -Inf        Inf 40    0.5251
+  Eq2a     Lnpl -0.0142865  0.0174301  -0.81965   0.45845 0.48525 -0.074420  0.0092441 40    0.5251
+  Eq2a     Lroa -0.0372508  0.0270450  -1.37736   0.24045 0.31523 -0.223861        Inf 40    0.5251
+  Eq2a    Lfull -0.1203751  0.2123300  -0.56692   0.60107 0.61156 -0.969695  0.4210664 40    0.5251
+  Eq2b     Lcar -0.0015698  0.0007074  -2.21913   0.09070 0.36264      -Inf        Inf 40    0.5600
+  Eq2b     Lnpl -0.0422264  0.0195447  -2.16050   0.09683 0.04230 -0.112588 -0.0050914 40    0.5600
+  Eq2b     Lroe -0.0170467  0.0062331  -2.73489   0.05218 0.05171 -0.039797  0.0000942 40    0.5600
+  Eq2b    Lfull -0.1800589  0.1608244  -1.11960   0.32557 0.33603 -0.638408  0.4310737 40    0.5600
+  Eq2c     Lcar -0.0018097  0.0008855  -2.04381   0.11046 0.44304 -0.010177  0.0060709 40    0.4648
+  Eq2c     Lnpl -0.0180854  0.0178661  -1.01228   0.36866 0.35164 -0.097589  0.0087137 40    0.4648
+  Eq2c     Leps -0.0002231  0.0004757  -0.46893   0.66354 0.70827 -0.002839  0.0021315 40    0.4648
+  Eq2c    Lfull -0.0032742  0.1361444  -0.02405   0.98197 0.98870 -0.670382  0.4936530 40    0.4648
+   Eq3     Lcar -0.0010832  0.0010051  -1.07772   0.34182 0.46835      -Inf        Inf 40    0.5901
+   Eq3     Lnpl -0.0308680  0.0074950  -4.11849   0.01463 0.01900 -0.048106 -0.0214992 40    0.5901
+   Eq3     Lroa -0.0291470  0.0394053  -0.73967   0.50056 0.62086 -0.306954  0.1737904 40    0.5901
+   Eq3     Lroe -0.0108972  0.0050988  -2.13719   0.09940 0.26893 -0.016506  0.0168915 40    0.5901
+   Eq3     Leps -0.0003028  0.0004882  -0.62027   0.56867 0.72637 -0.003427  0.0035538 40    0.5901
+   Eq3    Lfull -0.2417316  0.2286684  -1.05713   0.35007 0.43524 -0.859136  0.4214068 40    0.5901
+
+> write.csv(res, "output/tables/T3_H1_baseline.csv", row.names = FALSE)
+
+> cmp <- with(res, tapply(sprintf("%.4f [%.3f]", Coef, p_wcb), list(Variable, Model), identity))
+
+> cmp <- cmp[c("Lcar", "Lnpl", "Lroa", "Lroe", "Leps", "Lfull"), ]
+
+> cat("\nCoefficient [bootstrap p]\n"); print(noquote(cmp))
+
+Coefficient [bootstrap p]
+      Eq2a            Eq2b            Eq2c            Eq3            
+Lcar  -0.0017 [0.250] -0.0016 [0.363] -0.0018 [0.443] -0.0011 [0.468]
+Lnpl  -0.0143 [0.485] -0.0422 [0.042] -0.0181 [0.352] -0.0309 [0.019]
+Lroa  -0.0373 [0.315] <NA>            <NA>            -0.0291 [0.621]
+Lroe  <NA>            -0.0170 [0.052] <NA>            -0.0109 [0.269]
+Leps  <NA>            <NA>            -0.0002 [0.708] -0.0003 [0.726]
+Lfull -0.1204 [0.612] -0.1801 [0.336] -0.0033 [0.989] -0.2417 [0.435]
+
+> cat("\nWithin R2:\n"); print(noquote(sapply(fits, function(m) sprintf("%.3f", r2(m, "wr2")))))
+
+Within R2:
+ Eq2a  Eq2b  Eq2c   Eq3 
+0.525 0.560 0.465 0.590 
+
+> cat("Run finished:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n")
+Run finished: 2026-10-05 22:06:37 
+
+> sink()
