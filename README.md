@@ -77,6 +77,8 @@ v1.3.1 is a documentation-only revision of v1.3-LOCKED: no panel value changed, 
 
 1. Install R 4.6.1 (and, optionally, RStudio).
 2. Open the project: double-click the `.Rproj` file, or start R with the package folder as the working directory.
+
+   On Windows, place the package in a short path (for example C:\repro). Very long folder paths can exceed Windows' path-length limit and make renv::restore() fail. If renv asks whether to activate the project, choose option 1.
 3. Restore the packages (first time only):
    ```r
    renv::restore()
