@@ -2,8 +2,8 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23196473.svg)](https://doi.org/10.5281/zenodo.23196473)
 
-**Authors:** Jasco Francis John (Ardhi University); Minja Ladislaus
-**Package version:** 1.0 (October 2026)
+**Authors:** Jasco John (Ardhi University); Minja Ladislaus
+**Package version:** 1.0.1 (October 2026)
 **Manuscript:** *Asset Quality and Bank Valuation in a Frontier Equity Market: Evidence from Tanzanian Listed Commercial Banks* (under review)
 **Dataset:** Tanzania_DSE_AnalyticalDataset_v1.3.1_LOCKED (included)
 
@@ -176,4 +176,5 @@ Run time is about 10–15 minutes on a standard laptop, mostly the confidence-in
 - Data: Creative Commons Attribution 4.0 International (CC BY 4.0)
 
 Please cite the article (reference to be added on publication) and this package:
+
 John, J., & Ladislaus, M. (2026). *Replication package: Asset Quality and Bank Valuation in a Frontier Equity Market: Evidence from Tanzanian Listed Commercial Banks* [Software]. Zenodo. https://doi.org/10.5281/zenodo.23196473
